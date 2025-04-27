@@ -14,7 +14,7 @@ async function addNote(title) {
 
   notes.push(note);
 
-  await fs.writeFile(notesPath, JSON.stringify(notes));
+  await saveNotes(notes);
   console.log(chalk.bgGreen("Note was added"));
 }
 
@@ -23,32 +23,44 @@ async function getNotes() {
   return Array.isArray(JSON.parse(notes)) ? JSON.parse(notes) : [];
 }
 
+async function saveNotes(notes) {
+  await fs.writeFile(notesPath, JSON.stringify(notes));
+}
+
 async function printNotes() {
   const notes = await getNotes();
 
   console.log(chalk.bgBlue("Here is the list of notes:"));
   notes.forEach((note) => {
-    console.log(chalk.blue(note.id, note.title));
+    console.log(chalk.bgWhite(note.id), chalk.blue(note.title));
   });
 }
 
 async function removeNote(id) {
   const notes = await getNotes();
-  const indexToDelete = notes.findIndex((note) => note.id == id);
+  const filtered = notes.filter((note) => note.id !== id);
 
-  if (indexToDelete !== -1) {
-    notes.splice(indexToDelete, 1);
-  } else {
-    console.log(chalk.bgRed("Operaion failed"));
-    return;
-  }
+  await saveNotes(filtered);
+  console.log(chalk.bgYellow(`A note with id=${id} has been deleted`));
+}
 
-  await fs.writeFile(notesPath, JSON.stringify(notes));
-  console.log(chalk.bgYellow("A note was deleted"));
+async function editNote(id, newTitle) {
+  const notes = await getNotes();
+  const notesAfterEditing = notes.map((note) => {
+    if (note.id === id) {
+      return { ...note, title: newTitle };
+    } else {
+      return note;
+    }
+  });
+
+  await saveNotes(notesAfterEditing);
+  console.log(chalk.bgYellow(`A note with id=${id} has been edited`));
 }
 
 module.exports = {
   addNote,
   printNotes,
   removeNote,
+  editNote,
 };
